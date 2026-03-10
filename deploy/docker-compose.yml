@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  whatsapp-crm-bridge:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: whatsapp-crm-bridge
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    volumes:
+      # Mount service account JSON if stored outside the project
+      - ${GOOGLE_SERVICE_ACCOUNT_JSON:-./service-account.json}:/app/service-account.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: nginx reverse proxy with HTTPS (uncomment for production)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: nginx-proxy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - whatsapp-crm-bridge
